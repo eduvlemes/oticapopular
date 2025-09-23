@@ -1271,6 +1271,7 @@ body .side-user .close-side .icon > .icon{
     line-height: 16px;
 }
 @media(max-width:990px){
+    .banners-carousel .owl-item{border-radius:0px!important;}
     .header-mobile .nav-icon img{
         height: 24px;
     }
