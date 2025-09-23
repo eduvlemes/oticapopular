@@ -9,15 +9,26 @@ document.addEventListener('click', function(e) {
 });
 // Função para exibir a personalização ao clicar no botão de compra
 function setupPersonalizeProductTrigger() {
-		const personalize = document.querySelector('.personalize-product');
-		const buyBtn = document.querySelector('.product-info-content .product-action-buy');
-			if (personalize && buyBtn) {
-				buyBtn.addEventListener('click', function(e) {
-					e.preventDefault();
-					e.stopPropagation();
-					document.body.classList.add('personalize-product__visible');
-				});
-			}
+    // Remove o listener antigo se existir para evitar duplicatas
+    document.removeEventListener('click', handleBuyButtonClick);
+    
+    // Usa event delegation para capturar cliques no botão de compra
+    document.addEventListener('click', handleBuyButtonClick);
+}
+
+function handleBuyButtonClick(e) {
+    // Verifica se o clique foi no botão de compra
+    if (e.target.closest('.product-info-content .product-action-buy')) {
+        const personalize = document.querySelector('.personalize-product');
+        const buyBtn = e.target.closest('.product-action-buy');
+        
+        if (personalize && buyBtn) {
+            console.log(`ouytch2`);
+            e.preventDefault();
+            e.stopPropagation();
+            document.body.classList.add('personalize-product__visible');
+        }
+    }
 }
 // Função de inicialização da personalização
 // function personalizeInit() {
@@ -385,9 +396,47 @@ function personalizeInit() {
             actionBtn.onclick = function () {
                 // Limpa o estado salvo quando finaliza a compra
                 clearCurrentStep();
-                // Aqui você pode disparar o submit do form ou outra ação
+                
+                // Adiciona loading ao botão
+                const originalText = actionBtn.textContent;
+                actionBtn.textContent = 'ADICIONANDO...';
+                actionBtn.disabled = true;
+                
+                // Faz o submit via AJAX
                 const form = document.querySelector('.product-info-content form[name="form_add_cart"]');
-                if (form) form.submit();
+                if (form) {
+                    const formData = new FormData(form);
+                    
+                    fetch(form.action || window.location.href, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Produto adicionado com sucesso, redireciona para o carrinho
+                            console.log('Produto adicionado ao carrinho com sucesso');
+                            window.location.href = '/carrinho';
+                        } else {
+                            throw new Error('Erro ao adicionar produto ao carrinho');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert('Erro ao adicionar produto ao carrinho. Tente novamente.');
+                        
+                        // Restaura o botão em caso de erro
+                        actionBtn.textContent = originalText;
+                        actionBtn.disabled = false;
+                    });
+                } else {
+                    // Fallback caso não encontre o form
+                    console.warn('Formulário não encontrado, usando método tradicional');
+                    actionBtn.textContent = originalText;
+                    actionBtn.disabled = false;
+                }
             };
         }
     }
@@ -632,6 +681,7 @@ function personalizeInit() {
 
 // Função para observar alterações
 function observeProductInfoContent() {
+	
 	const container = document.querySelector('.product-info-content');
 	if (!container) return;
 	const form = container.querySelector('.product-action');
@@ -1099,3 +1149,51 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+document.addEventListener("DOMContentLoaded", function() {
+$(`.header-top .nav-contact`).addClass(`col`).prependTo(`.header .d-xl-block > .text-top > div > .row`);
+$(`.nav-top`).addClass(`col`).appendTo(`.header .d-xl-block > .text-top > div > .row`);
+
+
+let text_top = $('.text-top .p-3').html().split('\n').map(function(item, index){ if(![""," "].includes(item.trim())){return `<div class=header-message__item>${item}</div>`; } }).join(' ');
+$(`<div class=header-message><div class=container><div class="header-message__content py-2">${text_top}</div></div></div>`).prependTo('.text-top .p-3');
+ 
+$('.header-message .header-message__content').owlCarousel({
+    loop: true,
+    dots: false,
+    margin: 10,
+    autoplay: true,
+    autoplayTimeout: 5000,
+    autoplayHoverPause: false,
+    nav: true,
+    items: 1,
+});
+$(document).ready(function(){
+  $(".header-message__content.owl-loaded").trigger("refresh.owl.carousel");
+});
+
+$('.section--reviews .col-1 + .col-10,.products-showcase .col-1 + .col-md-10').toggleClass('col-md-10 col-md-slider');
+$('.section--reviews .col-1,.products-showcase .col-1').addClass('owl-arrow-custom'); 
+    $('.products-showcase .col-1').toggleClass('col-1 col-auto');
+let header = $('.header-1');
+header.find('nav').closest('.col').toggleClass('col col-auto').insertAfter('.header-middle > .container-fluid > .row > div:first-child');
+header.find(`.header-middle > .container-fluid > .row > div:nth-child(4)`).before(`<div class="col-auto xl-visible"><a href="" class="d-flex align-items-center find_store"><img src="https://cdn.dooca.store/181370/files/frame-80.svg?v=1757473338"><span>Encontre uma loja<br>próxima de você</span></a></div>`)
+if(window.dooca.customer?.first_name){
+$(`.nav-user > a > span`).html(`<b>Olá! ${window.dooca.customer.first_name}</b><small>Minha conta</small>`);
+}else{
+$(`.nav-user > a > span`).html(`<b>Olá! Visitante</b><small>Faça login ou cadastre-se</small>`);
+};
+
+$(`.footer-bottom >div >.row`).addClass(`col`).appendTo(`.footer-navigation > .row`);
+
+$('.footer-logo-text').remove(); $('<a style="display:block;margin-right:3rem;" href="https://www.alpix.dev/criar-sua-dooca-commerce?ref=oticapopular" target="_blank" > <img style="height:26px" src="https://www.alpix.dev/wp-content/uploads/2022/04/logo_b.svg" / > </a>').insertBefore('.footer-logo-link');
+ 
+
+$(window).load(function(){
+$('.reviews-slider').trigger('refresh.owl.carousel');
+});
+
+
+
+
+
+});
