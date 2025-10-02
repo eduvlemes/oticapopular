@@ -1,58 +1,4 @@
 console.log(`auuu`)
-window.customizationStepsConfig = [
-	{
-		stepTitle:"Tipo da Lente",
-		showStepWhen:[
-			{
-				title:"Tipo de Óculos",
-				is:"=",
-				value:"Com Grau"
-			}
-		]
-	},
-	{
-		stepTitle:"Acabamento da Lente",
-		showStepWhen:[
-			{
-				title:"Tipo de Óculos",
-				is:"!=",
-				value:"Somente a Armação"
-			}
-		]
-	},
-	{
-		stepTitle:"Receita Oftálmica",
-		showStepWhen:[
-			{
-				title:"Tipo de Óculos",
-				is:"=",
-				value:"Com Grau"
-			}
-		]
-	}
-]
-window.customizationDescriptions = [
-	{
-		title: "Proteção Clássica",
-		description: "Lentes anti-reflexo e resistentes a arranhões que protegem contra raios UV"
-	},
-	{
-		title: "Proteção de Luz Azul",
-		description: "Lentes anti-reflexo e resistentes a arranhões que protegem contra raios UV com tratamento especial que ajuda a bloquear a luz azul potencialmente incômoda que ocorre natural e digitalmente"
-	},
-	{
-		title: "Clássica",
-		description: "Grau -3.00 à +3.00. Lentes clássicas em resina. Resistentes a impactos e indicadas para graus entre -3.00 e +3.00."
-	},
-	{
-		title: "Fina",
-		description: "Grau -5.00 à +5.00. Lentes finas em policarbonato. Mais leves, resistentes e indicadas para graus entre -5.00 e +5.00."
-	},
-	{
-		title: "Ultra Fina",
-		description: "Grau -6.00 à +6.00. Lentes ultra finas com tecnologia alto índice. Precisão, leveza e elegância. São indicadas para graus acima de -6.00 e +6.00."
-	}
-]
 // Fecha a personalização ao clicar fora dela
 document.addEventListener('click', function(e) {
 	if (
@@ -436,16 +382,9 @@ function personalizeInit() {
             actionBtn.textContent = 'AVANÇAR';
             actionBtn.onclick = function () {
                 allSteps.forEach(s => s.classList.remove('active'));
-                
-                // Encontra o próximo passo visível
-                const nextVisibleStep = findNextVisibleStep(currentStepIdx);
-                if (nextVisibleStep) {
-                    nextVisibleStep.classList.add('active');
-                    const nextStepIdx = allSteps.indexOf(nextVisibleStep);
-                    updateActionBtn(nextStepIdx);
-                }
+                allSteps[currentStepIdx + 1].classList.add('active');
+                updateActionBtn(currentStepIdx + 1);
             };
-						actionBtn.classList.remove('add-btn');
         } else if (currentStepIdx === groups.length - 1) {
             actionBtn.textContent = 'AVANÇAR';
             actionBtn.onclick = function () {
@@ -453,10 +392,8 @@ function personalizeInit() {
                 review.classList.add('active');
                 updateActionBtn(groups.length); // resume
             };
-						actionBtn.classList.remove('add-btn');
         } else {
             actionBtn.textContent = 'ADICIONAR AO CARRINHO';
-						actionBtn.classList.add('add-btn');
             actionBtn.onclick = function () {
                 // Limpa o estado salvo quando finaliza a compra
                 clearCurrentStep();
@@ -465,7 +402,7 @@ function personalizeInit() {
                 const originalText = actionBtn.textContent;
                 actionBtn.textContent = 'ADICIONANDO...';
                 actionBtn.disabled = true;
-                localStorage.removeItem(`${window.dooca.product.variation.grid_id}`);
+                
                 // Faz o submit via AJAX
                 const form = document.querySelector('.product-info-content form[name="form_add_cart"]');
                 if (form) {
@@ -534,72 +471,11 @@ function personalizeInit() {
     });
 
   
-    // Função para gerar mensagem do WhatsApp com informações do pedido
-    function generateWhatsAppMessage() {
-        let message = `Olá! Preciso enviar minha receita oftálmica para o pedido.\n\n`;
-        
-        // Adiciona nome do produto
-        if (window.dooca && window.dooca.product && window.dooca.product.name) {
-            message += `*Produto:* ${window.dooca.product.name}\n\n`;
-        }
-        
-        // Adiciona customizações selecionadas
-        message += `*Customizações selecionadas:*\n`;
-        
-        groups.forEach(group => {
-            const labelEl = group.querySelector('.personalize-product__label');
-            if (!labelEl) return;
-            
-            const stepTitle = labelEl.textContent.trim();
-            let value = '';
-            
-            // Verifica radios
-            const radios = group.querySelectorAll('input[type="radio"]');
-            if (radios.length) {
-                const checked = group.querySelector('input[type="radio"]:checked');
-                if (checked) {
-                    const parentLabel = checked.parentElement;
-                    // Clone o label para manipular sem afetar o DOM
-                    const labelClone = parentLabel.cloneNode(true);
-                    // Remove elementos small (descrições) do clone
-                    const smallElements = labelClone.querySelectorAll('small');
-                    smallElements.forEach(small => small.remove());
-                    // Pega apenas o texto, sem as descrições
-                    value = labelClone.textContent.trim();
-                }
-            } else {
-                // Verifica inputs de texto
-                const input = group.querySelector('input[type="text"].personalize-input');
-                value = input ? input.value : '';
-            }
-            
-            // Adiciona à mensagem se tiver valor
-            if (value && value.length > 0) {
-                // Para receita oftálmica, não inclui o link, apenas indica que será enviada
-                if (stepTitle.toLowerCase().includes('receita oftálmica')) {
-                    message += `\n• ${stepTitle}: Será enviada via WhatsApp\n`;
-                } else {
-                    message += `• ${stepTitle}: ${value}\n`;
-                }
-            }
-        });
-        
-        message += `\nPoderia me ajudar com o envio da receita? Obrigado!`;
-        
-        return encodeURIComponent(message);
-    }
-
 	  // Customiza o grupo RECEITA OFTALMICA
   groups.forEach(group => {
     const label = group.querySelector('.personalize-product__label');
     if (label && label.textContent.trim().toLowerCase().includes('receita oftálmica')) {
       group.classList.add('personalize-product__receita');
-      
-      // Gera a mensagem do WhatsApp dinamicamente
-      const whatsappMessage = generateWhatsAppMessage();
-      const whatsappBaseUrl = $(`.footer-contact .whatsapp`).closest(`a`).attr(`href`) || 'https://wa.me/5511999999999';
-			//const whatsappBaseUrl = 'https://api.whatsapp.com/send?l=pt_br&phone=5511993243185';
-      
       const customHtml = `
         <img src="https://cdn.dooca.store/181370/files/frame-86.svg?v=1757717693" alt="Receita"/><div class="personalize-product__label-heading">VOCÊ TEM UMA RECEITA?</div>
         <p>Tire uma foto da sua receita ou envie um arquivo do seu computador/celular.</p>
@@ -607,15 +483,14 @@ function personalizeInit() {
           <input type="file" accept="image/*,.pdf" style="display:none" id="input-receita-oftalmica">
           <span>
             <i class="icon-arquivo"><img src="https://cdn.dooca.store/181370/files/frame-88.svg?v=1757717828"/></i>
-            Enviar Foto ou Arquivo
+            ENVIAR MINHA RECEITA
           </span>
         </label>
 				${localStorage.getItem(`${window.dooca.product.variation.grid_id}_personalize_receita_thumbnail`) || ''}
         <div class="receita-ou">
-          <strong class="or">ou</strong>
-          
-          <a href="${whatsappBaseUrl}&text=${whatsappMessage}" target="_blank" class="receita-whatsapp-btn" id="whatsapp-receita-btn"><i class="icon-whatsapp"></i> ENVIAR POR WHATSAPP</a><strong class="or">ou</strong>
-          <button type="button" class="receita-enviar-depois-btn">ENVIAR DEPOIS</button>
+          <strong>Não tem uma receita válida?</strong>
+          <p>Aperte aqui e agende um exame de vista em um de nossos laboratórios</p>
+          <a href="#" class="agendar-exame-link">AGENDAR EXAME DE VISTA</a>
         </div>
       `;
       // Adiciona o HTML customizado após o label original
@@ -675,24 +550,7 @@ function personalizeInit() {
 										if (data.thumbnailUrl) {
 												preview = document.createElement('div');
 												preview.className = 'receita-thumbnail-preview';
-												
-												// Verifica se é uma imagem ou outro tipo de arquivo
-												const isImage = data.thumbnailUrl.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i);
-												
-												if (isImage) {
-														// Se for imagem, exibe a thumbnail
-														preview.innerHTML = `
-															<img src="${data.thumbnailUrl}" alt="Prévia da receita" style="max-width:120px;max-height:120px;margin-top:8px;border-radius:8px;">
-															<button type="button" class="remover-arquivo-btn" title="Remover arquivo">×</button>
-														`;
-												} else {
-														// Se não for imagem, exibe ícone de PDF/arquivo
-														preview.innerHTML = `
-															<img src="https://cdn.dooca.store/181370/files/pdf-file-iconsvg.png?v=1759358786" alt="Arquivo PDF" style="max-width:120px;max-height:120px;margin-top:8px;border-radius:8px;">
-															<button type="button" class="remover-arquivo-btn" title="Remover arquivo">×</button>
-														`;
-												}
-												
+												preview.innerHTML = `<img src="${data.thumbnailUrl}" alt="Prévia da receita" style="max-width:120px;max-height:120px;margin-top:8px;border-radius:8px;">`;
 												localStorage.setItem(`${window.dooca.product.variation.grid_id}_personalize_receita_thumbnail`, preview.outerHTML);
 												
 												updateReview();
@@ -704,75 +562,6 @@ function personalizeInit() {
 														if (btn) {
 																btn.insertAdjacentElement('afterend', preview);
 														}
-												}
-												
-												// Adiciona listener para o botão de remover
-												const removerBtn = preview.querySelector('.remover-arquivo-btn');
-												if (removerBtn) {
-														removerBtn.addEventListener('click', function(e) {
-																// Previne o comportamento padrão e para a propagação do evento
-																e.preventDefault();
-																e.stopPropagation();
-																
-																// Remove a prévia
-																preview.remove();
-																
-																// Limpa o input de arquivo
-																const receitaInputFile = group.querySelector('#input-receita-oftalmica');
-																if (receitaInputFile) {
-																		receitaInputFile.value = '';
-																}
-																
-																// Limpa o input text que recebe o link
-																const receitaInputText = group.querySelector('.personalize-input');
-																if (receitaInputText) {
-																		receitaInputText.value = '';
-																		receitaInputText.dispatchEvent(new Event('change', { bubbles: true }));
-																}
-																
-																// Remove do localStorage
-																if (window.dooca && window.dooca.product && window.dooca.product.variation) {
-																		const storageKey = `${window.dooca.product.variation.grid_id}_personalize_receita_thumbnail`;
-																		localStorage.removeItem(storageKey);
-																}
-																
-																// Remove o botão de prosseguir se existir
-																const prosseguirBtn = group.querySelector('.prosseguir-arquivo-btn');
-																if (prosseguirBtn) {
-																		prosseguirBtn.remove();
-																}
-																
-																// Atualiza o review
-																updateReview();
-														});
-												}
-												
-												// Adiciona botão "Prosseguir com este arquivo/foto"
-												let prosseguirBtn = group.querySelector('.prosseguir-arquivo-btn');
-												if (!prosseguirBtn) {
-														prosseguirBtn = document.createElement('button');
-														prosseguirBtn.type = 'button';
-														prosseguirBtn.className = 'prosseguir-arquivo-btn';
-														prosseguirBtn.textContent = 'PROSSEGUIR COM ESTE ARQUIVO/FOTO';
-														
-														// Adiciona ação de avançar
-														prosseguirBtn.onclick = function() {
-																const currentStepIdx = allSteps.findIndex(step => step.classList.contains('active'));
-																
-																// Remove a classe active do passo atual
-																allSteps.forEach(s => s.classList.remove('active'));
-																
-																// Encontra o próximo passo visível
-																const nextVisibleStep = findNextVisibleStep(currentStepIdx);
-																if (nextVisibleStep) {
-																		nextVisibleStep.classList.add('active');
-																		const nextStepIdx = allSteps.indexOf(nextVisibleStep);
-																		updateActionBtn(nextStepIdx);
-																}
-														};
-														
-														// Insere após a prévia
-														preview.insertAdjacentElement('afterend', prosseguirBtn);
 												}
 										}
 								})
@@ -794,28 +583,6 @@ function personalizeInit() {
     }
   });
   
-  // Adiciona listeners para os botões de receita
-  groups.forEach(group => {
-    // Botão "Enviar Depois"
-    const enviarDepoisBtn = group.querySelector('.receita-enviar-depois-btn');
-    if (enviarDepoisBtn) {
-      enviarDepoisBtn.addEventListener('click', function() {
-        const currentStepIdx = allSteps.findIndex(step => step.classList.contains('active'));
-        
-        // Remove a classe active do passo atual
-        allSteps.forEach(s => s.classList.remove('active'));
-        
-        // Encontra o próximo passo visível
-        const nextVisibleStep = findNextVisibleStep(currentStepIdx);
-        if (nextVisibleStep) {
-          nextVisibleStep.classList.add('active');
-          const nextStepIdx = allSteps.indexOf(nextVisibleStep);
-          updateActionBtn(nextStepIdx);
-        }
-      });
-    }
-  });
-  
   allSteps.forEach((step, idx) => {
     if (!step) return;
     const label = step.querySelector('.personalize-product__label');
@@ -831,34 +598,14 @@ function personalizeInit() {
     backBtn.className = 'personalize-back-btn';
     backBtn.innerHTML = '<i><img src="https://cdn.dooca.store/181370/files/frame-85.svg?v=1757703290" alt="Voltar"/></i>';
     backBtn.onclick = function () {
-      // Limpa o step atual antes de voltar
-      if (step !== review) {
-        clearStepInputs(step);
-				
-      }
-      
       allSteps.forEach(s => s.classList.remove('active'));
-      // Se for o review, volta para o último grupo visível
+      // Se for o review, volta para o último grupo
       if (step === review) {
-        // Encontra o último grupo visível
-        for (let i = groups.length - 1; i >= 0; i--) {
-          const group = groups[i];
-          if (group && !group.classList.contains('step-hidden') && group.style.display !== 'none') {
-            group.classList.add('active');
-						clearStepInputs(group);
-            updateActionBtn(i);
-            break;
-          }
-        }
+        groups[groups.length - 1].classList.add('active');
+        updateActionBtn(groups.length - 1);
       } else {
-        // Encontra o passo anterior visível
-        const previousStep = findPreviousVisibleStep(idx);
-        if (previousStep) {
-          previousStep.classList.add('active');
-					clearStepInputs(previousStep);
-          const prevStepIdx = allSteps.indexOf(previousStep);
-          updateActionBtn(prevStepIdx);
-        }
+        allSteps[idx - 1].classList.add('active');
+        updateActionBtn(idx - 1);
       }
     };
     label.prepend(backBtn);
@@ -874,18 +621,7 @@ function personalizeInit() {
 						const radios = group.querySelectorAll('input[type="radio"]');
             if (radios.length) {
                 const checked = group.querySelector('input[type="radio"]:checked');
-                if (checked) {
-                    const parentLabel = checked.parentElement;
-                    // Clone o label para manipular sem afetar o DOM
-                    const labelClone = parentLabel.cloneNode(true);
-                    // Remove elementos small (descrições) do clone
-                    const smallElements = labelClone.querySelectorAll('small');
-                    smallElements.forEach(small => small.remove());
-                    // Pega apenas o texto, sem as descrições
-                    value = labelClone.textContent.trim();
-                } else {
-                    value = '';
-                }
+                value = checked ? checked.parentElement.textContent.trim() : '';
 								console.log(`xd`,label, value);
             } else {
                 // Textos
@@ -923,404 +659,20 @@ function personalizeInit() {
         if (backBtn) {
             backBtn.onclick = function () {
                 allSteps.forEach(s => s.classList.remove('active'));
-                // Encontra o último grupo visível (review não limpa dados, apenas navega)
-                for (let i = groups.length - 1; i >= 0; i--) {
-                  const group = groups[i];
-                  if (group && !group.classList.contains('step-hidden') && group.style.display !== 'none') {
-                    group.classList.add('active');
-                    updateActionBtn(i);
-                    break;
-                  }
-                }
+                groups[groups.length - 1].classList.add('active');
+                updateActionBtn(groups.length - 1);
             };
         }
     }
 
-    // Sistema de exibição condicional baseado em window.customizationStepsConfig
-    function checkStepConditions(stepConfig, selectedValues) {
-        if (!stepConfig.showStepWhen || !Array.isArray(stepConfig.showStepWhen)) {
-            return true; // Se não tem condições, sempre exibe
-        }
-        
-        return stepConfig.showStepWhen.every(condition => {
-            const selectedValue = selectedValues[condition.title];
-            
-            if (!selectedValue) {
-                return false; // Se não tem valor selecionado, não exibe
-            }
-            
-            switch (condition.is) {
-                case '=':
-                    return selectedValue === condition.value;
-                case '!=':
-                    return selectedValue !== condition.value;
-                default:
-                    return true;
-            }
-        });
-    }
-    
-    function getSelectedValues() {
-        const values = {};
-        
-        groups.forEach(group => {
-            const labelEl = group.querySelector('.personalize-product__label');
-            if (!labelEl) return;
-            
-            const stepTitle = labelEl.textContent.trim();
-            
-            // Verifica radios
-            const checkedRadio = group.querySelector('input[type="radio"]:checked');
-            if (checkedRadio) {
-                const labelText = checkedRadio.closest('label')?.textContent.trim();
-                if (labelText) {
-                    values[stepTitle] = labelText;
-                }
-            }
-            
-            // Verifica inputs de texto
-            const textInput = group.querySelector('input[type="text"].personalize-input');
-            if (textInput && textInput.value.trim()) {
-                values[stepTitle] = textInput.value.trim();
-            }
-        });
-        
-        return values;
-    }
-    
-    function clearStepInputs(group) {
-			console.log(`group`, group)
-        let hasChanges = false;
-        
-        // Limpa inputs de texto apenas se tiverem valor
-        const textInputs = group.querySelectorAll('input[type="text"], input:not([type]), textarea');
-        textInputs.forEach(input => {
-            if (input.value && input.value.length > 0) {
-                input.value = '';
-                hasChanges = true;
-            }
-        });
-        
-        // Desmarca radio buttons apenas se estiverem marcados
-        const radioInputs = group.querySelectorAll('input[type="radio"]');
-        radioInputs.forEach(input => {
-            if (input.checked) {
-                input.checked = false;
-                hasChanges = true;
-            }
-        });
-        
-        // Desmarca checkboxes apenas se estiverem marcados
-        const checkboxInputs = group.querySelectorAll('input[type="checkbox"]');
-        checkboxInputs.forEach(input => {
-            if (input.checked) {
-                input.checked = false;
-                hasChanges = true;
-            }
-        });
-        
-        // Limpa selects apenas se não estiverem na primeira opção
-        const selectInputs = group.querySelectorAll('select');
-        selectInputs.forEach(select => {
-            if (select.selectedIndex > 0) {
-                select.selectedIndex = 0;
-                hasChanges = true;
-            }
-        });
-        
-        // Remove preview de receita se existir
-        const receitaPreview = group.querySelector('.receita-thumbnail-preview');
-        if (receitaPreview) {
-            receitaPreview.remove();
-            hasChanges = true;
-        }
-        
-        // Remove botão de prosseguir se existir
-        const prosseguirBtn = group.querySelector('.prosseguir-arquivo-btn');
-        if (prosseguirBtn) {
-            prosseguirBtn.remove();
-            hasChanges = true;
-        }
-        
-        // Limpa o localStorage da receita se for o step de receita
-        const label = group.querySelector('.personalize-product__label');
-        if (label && label.textContent.trim().toLowerCase().includes('receita oftálmica')) {
-            if (window.dooca && window.dooca.product && window.dooca.product.variation) {
-                const storageKey = `${window.dooca.product.variation.grid_id}_personalize_receita_thumbnail`;
-                if (localStorage.getItem(storageKey)) {
-                    localStorage.removeItem(storageKey);
-                    hasChanges = true;
-                }
-            }
-        }
-        
-        // Limpa dados do localStorage de customização para inputs deste grupo
-        clearCustomizationStorageForGroup(group);
-        
-        // Se houve mudanças, atualiza o review
-        if (hasChanges && typeof updateReview === 'function') {
-            updateReview();
-        }
-    }
-    
-    function clearCustomizationStorageForGroup(group) {
-        if (!window.dooca || !window.dooca.product || !window.dooca.product.variation) {
-            return;
-        }
-        
-        const storageKey = window.dooca.product.variation.grid_id;
-        const stored = localStorage.getItem(storageKey);
-        
-        if (!stored) return;
-        
-        try {
-            let customizationData = JSON.parse(stored);
-            
-            if (!Array.isArray(customizationData)) return;
-            
-            // Encontra todos os inputs deste grupo que têm name com padrão customize[content][X][value]
-            const inputs = group.querySelectorAll('input[name*="customize[content]"], select[name*="customize[content]"], textarea[name*="customize[content]"]');
-            
-            inputs.forEach(input => {
-                const inputName = input.name;
-                if (inputName) {
-                    // Remove itens do localStorage que correspondem a este input
-                    customizationData = customizationData.filter(item => item.id !== inputName);
-                }
-            });
-            
-            // Atualiza o localStorage com os dados filtrados
-            if (customizationData.length > 0) {
-                localStorage.setItem(storageKey, JSON.stringify(customizationData));
-            } else {
-                localStorage.removeItem(storageKey);
-            }
-            
-        } catch (error) {
-            console.warn('Erro ao limpar dados de customização do localStorage:', error);
-        }
-    }
-    
-    // Flag para evitar loops infinitos
-    let isApplyingVisibility = false;
-    
-    function applyStepVisibility() {
-        if (isApplyingVisibility) {
-            return; // Evita loop infinito
-        }
-        
-        if (!window.customizationStepsConfig || !Array.isArray(window.customizationStepsConfig)) {
-            return; // Se não tem configuração, não aplica nenhuma regra
-        }
-        
-        isApplyingVisibility = true;
-        
-        try {
-            const selectedValues = getSelectedValues();
-            
-            groups.forEach(group => {
-                const labelEl = group.querySelector('.personalize-product__label');
-                if (!labelEl) return;
-                
-                const stepTitle = labelEl.textContent.trim();
-                
-                // Encontra a configuração para este passo
-                const stepConfig = window.customizationStepsConfig.find(config => 
-                    config.stepTitle === stepTitle
-                );
-                
-                if (stepConfig) {
-                    // Se tem configuração, aplica as regras
-                    const shouldShow = checkStepConditions(stepConfig, selectedValues);
-                    
-                    if (shouldShow) {
-                        group.style.display = '';
-                        group.classList.remove('step-hidden');
-                    } else {
-                        group.style.display = 'none';
-                        group.classList.add('step-hidden');
-                        
-                        // Limpa todos os inputs do step oculto
-                        clearStepInputs(group);
-                        
-                        // Se o passo oculto estava ativo, move para o próximo visível
-                        if (group.classList.contains('active')) {
-                            group.classList.remove('active');
-                            const nextVisibleStep = findNextVisibleStep(groups.indexOf(group));
-                            if (nextVisibleStep) {
-                                nextVisibleStep.classList.add('active');
-                                const nextStepIdx = allSteps.indexOf(nextVisibleStep);
-                                updateActionBtn(nextStepIdx);
-                            }
-                        }
-                    }
-                } else {
-                    // Se não tem configuração, sempre exibe o passo
-                    group.style.display = '';
-                    group.classList.remove('step-hidden');
-                }
-            });
-        } finally {
-            isApplyingVisibility = false;
-        }
-    }
-    
-    function findNextVisibleStep(currentIndex) {
-        for (let i = currentIndex + 1; i < allSteps.length; i++) {
-            const step = allSteps[i];
-            if (step && !step.classList.contains('step-hidden') && step.style.display !== 'none') {
-                return step;
-            }
-        }
-        
-        // Se não encontrou próximo, volta para o review
-        return review;
-    }
-    
-    function findPreviousVisibleStep(currentIndex) {
-        for (let i = currentIndex - 1; i >= 0; i--) {
-            const step = allSteps[i];
-            if (step && !step.classList.contains('step-hidden') && step.style.display !== 'none') {
-                return step;
-            }
-        }
-        
-        // Se não encontrou anterior, volta para o primeiro passo visível
-        return allSteps.find(step => step && !step.classList.contains('step-hidden') && step.style.display !== 'none');
-    }
-
-    // Função para atualizar o link do WhatsApp
-    function updateWhatsAppLink() {
-        const whatsappBtn = document.querySelector('#whatsapp-receita-btn');
-        if (whatsappBtn) {
-            const whatsappMessage = generateWhatsAppMessage();
-            const whatsappBaseUrl = $(`.footer-contact .whatsapp`).closest(`a`).attr(`href`) || 'https://wa.me/5511999999999';
-            whatsappBtn.href = `${whatsappBaseUrl}&text=${whatsappMessage}`;
-        }
-    }
-
-    // Adiciona listeners para atualizar o review e avançar automaticamente
+    // Adiciona listeners para atualizar o review
     groups.forEach(group => {
         const inputs = group.querySelectorAll('input');
         inputs.forEach(input => {
             input.removeEventListener('change', updateReview); // Evita múltiplos listeners
             input.addEventListener('change', updateReview);
-            
-            // Adiciona listener para aplicar regras de visibilidade
-            input.addEventListener('change', function() {
-                applyStepVisibility();
-            });
-            
-            // Adiciona listener para atualizar o link do WhatsApp
-            input.addEventListener('change', function() {
-                updateWhatsAppLink();
-            });
-            
-            // Adiciona comportamento de avançar automaticamente para radios
-            if (input.type === 'radio') {
-                input.addEventListener('change', function() {
-                    // Pequeno delay para permitir que a seleção seja processada
-                    setTimeout(() => {
-                        const currentStepIdx = allSteps.findIndex(step => step.classList.contains('active'));
-                        
-                        // Remove a classe active do passo atual
-                        allSteps.forEach(s => s.classList.remove('active'));
-                        
-                        // Encontra o próximo passo visível
-                        const nextVisibleStep = findNextVisibleStep(currentStepIdx);
-                        if (nextVisibleStep) {
-                            nextVisibleStep.classList.add('active');
-                            
-                            // Calcula o índice do próximo passo para updateActionBtn
-                            const nextStepIdx = allSteps.indexOf(nextVisibleStep);
-                            updateActionBtn(nextStepIdx);
-                        }
-                    }, 100);
-                });
-            }
         });
     });
-
-    // Adiciona descrições automáticas aos radio buttons baseado em window.customizationDescriptions
-    function addCustomizationDescriptions() {
-        if (!window.customizationDescriptions || !Array.isArray(window.customizationDescriptions)) {
-            return;
-        }
-        
-        groups.forEach(group => {
-            const radioLabels = group.querySelectorAll('label');
-            radioLabels.forEach(label => {
-                const radio = label.querySelector('input[type="radio"]');
-                if (!radio) return;
-                
-                const labelText = label.textContent.trim();
-                
-                // Busca descrição correspondente
-                const matchingDescription = window.customizationDescriptions.find(desc => 
-                    desc.title && labelText.startsWith(desc.title)
-                );
-                
-                if (matchingDescription && matchingDescription.description) {
-                    // Verifica se já foi processado
-                    if (label.querySelector('div > small')) {
-                        return;
-                    }
-                    
-                    // Coleta apenas os nós de texto
-                    const textNodes = [];
-                    const walker = document.createTreeWalker(
-                        label,
-                        NodeFilter.SHOW_TEXT,
-                        null,
-                        false
-                    );
-                    
-                    let node;
-                    while (node = walker.nextNode()) {
-                        if (node.textContent.trim()) {
-                            textNodes.push(node);
-                        }
-                    }
-                    
-                    // Cria div para o texto principal
-                    const textDiv = document.createElement('div');
-                    textDiv.textContent = labelText + ' ';
-                    
-                    // Adiciona nova descrição dentro da div
-                    const descriptionElement = document.createElement('small');
-                    descriptionElement.textContent = matchingDescription.description;
-                    descriptionElement.style.fontWeight = 'normal';
-                    descriptionElement.style.opacity = '0.8';
-                    
-                    // Adiciona a descrição dentro da div
-                    textDiv.appendChild(descriptionElement);
-                    
-                    // Remove apenas os nós de texto, preservando elementos como .checkmark
-                    textNodes.forEach(textNode => {
-                        textNode.remove();
-                    });
-                    
-                    // Adiciona a div com o texto e a descrição
-                    label.appendChild(textDiv);
-                }
-            });
-        });
-    }
-    
-    // Adiciona as descrições após inicializar
-    addCustomizationDescriptions();
-
-    // Aplica regras de visibilidade iniciais
-    applyStepVisibility();
-    
-    // Verifica e limpa campos de steps ocultos após carregar (importante para recarregamento)
-    setTimeout(() => {
-        groups.forEach(group => {
-            if (group.classList.contains('step-hidden') || group.style.display === 'none') {
-                clearStepInputs(group);
-            }
-        });
-    }, 100);
 
     // Atualiza inicialmente
     updateReview();

@@ -445,7 +445,6 @@ function personalizeInit() {
                     updateActionBtn(nextStepIdx);
                 }
             };
-						actionBtn.classList.remove('add-btn');
         } else if (currentStepIdx === groups.length - 1) {
             actionBtn.textContent = 'AVANÇAR';
             actionBtn.onclick = function () {
@@ -453,10 +452,8 @@ function personalizeInit() {
                 review.classList.add('active');
                 updateActionBtn(groups.length); // resume
             };
-						actionBtn.classList.remove('add-btn');
         } else {
             actionBtn.textContent = 'ADICIONAR AO CARRINHO';
-						actionBtn.classList.add('add-btn');
             actionBtn.onclick = function () {
                 // Limpa o estado salvo quando finaliza a compra
                 clearCurrentStep();
@@ -465,7 +462,7 @@ function personalizeInit() {
                 const originalText = actionBtn.textContent;
                 actionBtn.textContent = 'ADICIONANDO...';
                 actionBtn.disabled = true;
-                localStorage.removeItem(`${window.dooca.product.variation.grid_id}`);
+                
                 // Faz o submit via AJAX
                 const form = document.querySelector('.product-info-content form[name="form_add_cart"]');
                 if (form) {
@@ -534,72 +531,11 @@ function personalizeInit() {
     });
 
   
-    // Função para gerar mensagem do WhatsApp com informações do pedido
-    function generateWhatsAppMessage() {
-        let message = `Olá! Preciso enviar minha receita oftálmica para o pedido.\n\n`;
-        
-        // Adiciona nome do produto
-        if (window.dooca && window.dooca.product && window.dooca.product.name) {
-            message += `*Produto:* ${window.dooca.product.name}\n\n`;
-        }
-        
-        // Adiciona customizações selecionadas
-        message += `*Customizações selecionadas:*\n`;
-        
-        groups.forEach(group => {
-            const labelEl = group.querySelector('.personalize-product__label');
-            if (!labelEl) return;
-            
-            const stepTitle = labelEl.textContent.trim();
-            let value = '';
-            
-            // Verifica radios
-            const radios = group.querySelectorAll('input[type="radio"]');
-            if (radios.length) {
-                const checked = group.querySelector('input[type="radio"]:checked');
-                if (checked) {
-                    const parentLabel = checked.parentElement;
-                    // Clone o label para manipular sem afetar o DOM
-                    const labelClone = parentLabel.cloneNode(true);
-                    // Remove elementos small (descrições) do clone
-                    const smallElements = labelClone.querySelectorAll('small');
-                    smallElements.forEach(small => small.remove());
-                    // Pega apenas o texto, sem as descrições
-                    value = labelClone.textContent.trim();
-                }
-            } else {
-                // Verifica inputs de texto
-                const input = group.querySelector('input[type="text"].personalize-input');
-                value = input ? input.value : '';
-            }
-            
-            // Adiciona à mensagem se tiver valor
-            if (value && value.length > 0) {
-                // Para receita oftálmica, não inclui o link, apenas indica que será enviada
-                if (stepTitle.toLowerCase().includes('receita oftálmica')) {
-                    message += `\n• ${stepTitle}: Será enviada via WhatsApp\n`;
-                } else {
-                    message += `• ${stepTitle}: ${value}\n`;
-                }
-            }
-        });
-        
-        message += `\nPoderia me ajudar com o envio da receita? Obrigado!`;
-        
-        return encodeURIComponent(message);
-    }
-
 	  // Customiza o grupo RECEITA OFTALMICA
   groups.forEach(group => {
     const label = group.querySelector('.personalize-product__label');
     if (label && label.textContent.trim().toLowerCase().includes('receita oftálmica')) {
       group.classList.add('personalize-product__receita');
-      
-      // Gera a mensagem do WhatsApp dinamicamente
-      const whatsappMessage = generateWhatsAppMessage();
-      const whatsappBaseUrl = $(`.footer-contact .whatsapp`).closest(`a`).attr(`href`) || 'https://wa.me/5511999999999';
-			//const whatsappBaseUrl = 'https://api.whatsapp.com/send?l=pt_br&phone=5511993243185';
-      
       const customHtml = `
         <img src="https://cdn.dooca.store/181370/files/frame-86.svg?v=1757717693" alt="Receita"/><div class="personalize-product__label-heading">VOCÊ TEM UMA RECEITA?</div>
         <p>Tire uma foto da sua receita ou envie um arquivo do seu computador/celular.</p>
@@ -607,15 +543,14 @@ function personalizeInit() {
           <input type="file" accept="image/*,.pdf" style="display:none" id="input-receita-oftalmica">
           <span>
             <i class="icon-arquivo"><img src="https://cdn.dooca.store/181370/files/frame-88.svg?v=1757717828"/></i>
-            Enviar Foto ou Arquivo
+            ENVIAR MINHA RECEITA
           </span>
         </label>
 				${localStorage.getItem(`${window.dooca.product.variation.grid_id}_personalize_receita_thumbnail`) || ''}
         <div class="receita-ou">
-          <strong class="or">ou</strong>
-          
-          <a href="${whatsappBaseUrl}&text=${whatsappMessage}" target="_blank" class="receita-whatsapp-btn" id="whatsapp-receita-btn"><i class="icon-whatsapp"></i> ENVIAR POR WHATSAPP</a><strong class="or">ou</strong>
-          <button type="button" class="receita-enviar-depois-btn">ENVIAR DEPOIS</button>
+          <strong>Não tem uma receita válida?</strong>
+          <p>Aperte aqui e agende um exame de vista em um de nossos laboratórios</p>
+          <a href="#" class="agendar-exame-link">AGENDAR EXAME DE VISTA</a>
         </div>
       `;
       // Adiciona o HTML customizado após o label original
@@ -675,24 +610,7 @@ function personalizeInit() {
 										if (data.thumbnailUrl) {
 												preview = document.createElement('div');
 												preview.className = 'receita-thumbnail-preview';
-												
-												// Verifica se é uma imagem ou outro tipo de arquivo
-												const isImage = data.thumbnailUrl.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i);
-												
-												if (isImage) {
-														// Se for imagem, exibe a thumbnail
-														preview.innerHTML = `
-															<img src="${data.thumbnailUrl}" alt="Prévia da receita" style="max-width:120px;max-height:120px;margin-top:8px;border-radius:8px;">
-															<button type="button" class="remover-arquivo-btn" title="Remover arquivo">×</button>
-														`;
-												} else {
-														// Se não for imagem, exibe ícone de PDF/arquivo
-														preview.innerHTML = `
-															<img src="https://cdn.dooca.store/181370/files/pdf-file-iconsvg.png?v=1759358786" alt="Arquivo PDF" style="max-width:120px;max-height:120px;margin-top:8px;border-radius:8px;">
-															<button type="button" class="remover-arquivo-btn" title="Remover arquivo">×</button>
-														`;
-												}
-												
+												preview.innerHTML = `<img src="${data.thumbnailUrl}" alt="Prévia da receita" style="max-width:120px;max-height:120px;margin-top:8px;border-radius:8px;">`;
 												localStorage.setItem(`${window.dooca.product.variation.grid_id}_personalize_receita_thumbnail`, preview.outerHTML);
 												
 												updateReview();
@@ -704,75 +622,6 @@ function personalizeInit() {
 														if (btn) {
 																btn.insertAdjacentElement('afterend', preview);
 														}
-												}
-												
-												// Adiciona listener para o botão de remover
-												const removerBtn = preview.querySelector('.remover-arquivo-btn');
-												if (removerBtn) {
-														removerBtn.addEventListener('click', function(e) {
-																// Previne o comportamento padrão e para a propagação do evento
-																e.preventDefault();
-																e.stopPropagation();
-																
-																// Remove a prévia
-																preview.remove();
-																
-																// Limpa o input de arquivo
-																const receitaInputFile = group.querySelector('#input-receita-oftalmica');
-																if (receitaInputFile) {
-																		receitaInputFile.value = '';
-																}
-																
-																// Limpa o input text que recebe o link
-																const receitaInputText = group.querySelector('.personalize-input');
-																if (receitaInputText) {
-																		receitaInputText.value = '';
-																		receitaInputText.dispatchEvent(new Event('change', { bubbles: true }));
-																}
-																
-																// Remove do localStorage
-																if (window.dooca && window.dooca.product && window.dooca.product.variation) {
-																		const storageKey = `${window.dooca.product.variation.grid_id}_personalize_receita_thumbnail`;
-																		localStorage.removeItem(storageKey);
-																}
-																
-																// Remove o botão de prosseguir se existir
-																const prosseguirBtn = group.querySelector('.prosseguir-arquivo-btn');
-																if (prosseguirBtn) {
-																		prosseguirBtn.remove();
-																}
-																
-																// Atualiza o review
-																updateReview();
-														});
-												}
-												
-												// Adiciona botão "Prosseguir com este arquivo/foto"
-												let prosseguirBtn = group.querySelector('.prosseguir-arquivo-btn');
-												if (!prosseguirBtn) {
-														prosseguirBtn = document.createElement('button');
-														prosseguirBtn.type = 'button';
-														prosseguirBtn.className = 'prosseguir-arquivo-btn';
-														prosseguirBtn.textContent = 'PROSSEGUIR COM ESTE ARQUIVO/FOTO';
-														
-														// Adiciona ação de avançar
-														prosseguirBtn.onclick = function() {
-																const currentStepIdx = allSteps.findIndex(step => step.classList.contains('active'));
-																
-																// Remove a classe active do passo atual
-																allSteps.forEach(s => s.classList.remove('active'));
-																
-																// Encontra o próximo passo visível
-																const nextVisibleStep = findNextVisibleStep(currentStepIdx);
-																if (nextVisibleStep) {
-																		nextVisibleStep.classList.add('active');
-																		const nextStepIdx = allSteps.indexOf(nextVisibleStep);
-																		updateActionBtn(nextStepIdx);
-																}
-														};
-														
-														// Insere após a prévia
-														preview.insertAdjacentElement('afterend', prosseguirBtn);
 												}
 										}
 								})
@@ -794,28 +643,6 @@ function personalizeInit() {
     }
   });
   
-  // Adiciona listeners para os botões de receita
-  groups.forEach(group => {
-    // Botão "Enviar Depois"
-    const enviarDepoisBtn = group.querySelector('.receita-enviar-depois-btn');
-    if (enviarDepoisBtn) {
-      enviarDepoisBtn.addEventListener('click', function() {
-        const currentStepIdx = allSteps.findIndex(step => step.classList.contains('active'));
-        
-        // Remove a classe active do passo atual
-        allSteps.forEach(s => s.classList.remove('active'));
-        
-        // Encontra o próximo passo visível
-        const nextVisibleStep = findNextVisibleStep(currentStepIdx);
-        if (nextVisibleStep) {
-          nextVisibleStep.classList.add('active');
-          const nextStepIdx = allSteps.indexOf(nextVisibleStep);
-          updateActionBtn(nextStepIdx);
-        }
-      });
-    }
-  });
-  
   allSteps.forEach((step, idx) => {
     if (!step) return;
     const label = step.querySelector('.personalize-product__label');
@@ -831,12 +658,6 @@ function personalizeInit() {
     backBtn.className = 'personalize-back-btn';
     backBtn.innerHTML = '<i><img src="https://cdn.dooca.store/181370/files/frame-85.svg?v=1757703290" alt="Voltar"/></i>';
     backBtn.onclick = function () {
-      // Limpa o step atual antes de voltar
-      if (step !== review) {
-        clearStepInputs(step);
-				
-      }
-      
       allSteps.forEach(s => s.classList.remove('active'));
       // Se for o review, volta para o último grupo visível
       if (step === review) {
@@ -845,7 +666,6 @@ function personalizeInit() {
           const group = groups[i];
           if (group && !group.classList.contains('step-hidden') && group.style.display !== 'none') {
             group.classList.add('active');
-						clearStepInputs(group);
             updateActionBtn(i);
             break;
           }
@@ -855,7 +675,6 @@ function personalizeInit() {
         const previousStep = findPreviousVisibleStep(idx);
         if (previousStep) {
           previousStep.classList.add('active');
-					clearStepInputs(previousStep);
           const prevStepIdx = allSteps.indexOf(previousStep);
           updateActionBtn(prevStepIdx);
         }
@@ -874,18 +693,7 @@ function personalizeInit() {
 						const radios = group.querySelectorAll('input[type="radio"]');
             if (radios.length) {
                 const checked = group.querySelector('input[type="radio"]:checked');
-                if (checked) {
-                    const parentLabel = checked.parentElement;
-                    // Clone o label para manipular sem afetar o DOM
-                    const labelClone = parentLabel.cloneNode(true);
-                    // Remove elementos small (descrições) do clone
-                    const smallElements = labelClone.querySelectorAll('small');
-                    smallElements.forEach(small => small.remove());
-                    // Pega apenas o texto, sem as descrições
-                    value = labelClone.textContent.trim();
-                } else {
-                    value = '';
-                }
+                value = checked ? checked.parentElement.textContent.trim() : '';
 								console.log(`xd`,label, value);
             } else {
                 // Textos
@@ -923,7 +731,7 @@ function personalizeInit() {
         if (backBtn) {
             backBtn.onclick = function () {
                 allSteps.forEach(s => s.classList.remove('active'));
-                // Encontra o último grupo visível (review não limpa dados, apenas navega)
+                // Encontra o último grupo visível
                 for (let i = groups.length - 1; i >= 0; i--) {
                   const group = groups[i];
                   if (group && !group.classList.contains('step-hidden') && group.style.display !== 'none') {
@@ -989,7 +797,6 @@ function personalizeInit() {
     }
     
     function clearStepInputs(group) {
-			console.log(`group`, group)
         let hasChanges = false;
         
         // Limpa inputs de texto apenas se tiverem valor
@@ -1032,13 +839,6 @@ function personalizeInit() {
         const receitaPreview = group.querySelector('.receita-thumbnail-preview');
         if (receitaPreview) {
             receitaPreview.remove();
-            hasChanges = true;
-        }
-        
-        // Remove botão de prosseguir se existir
-        const prosseguirBtn = group.querySelector('.prosseguir-arquivo-btn');
-        if (prosseguirBtn) {
-            prosseguirBtn.remove();
             hasChanges = true;
         }
         
@@ -1189,16 +989,6 @@ function personalizeInit() {
         return allSteps.find(step => step && !step.classList.contains('step-hidden') && step.style.display !== 'none');
     }
 
-    // Função para atualizar o link do WhatsApp
-    function updateWhatsAppLink() {
-        const whatsappBtn = document.querySelector('#whatsapp-receita-btn');
-        if (whatsappBtn) {
-            const whatsappMessage = generateWhatsAppMessage();
-            const whatsappBaseUrl = $(`.footer-contact .whatsapp`).closest(`a`).attr(`href`) || 'https://wa.me/5511999999999';
-            whatsappBtn.href = `${whatsappBaseUrl}&text=${whatsappMessage}`;
-        }
-    }
-
     // Adiciona listeners para atualizar o review e avançar automaticamente
     groups.forEach(group => {
         const inputs = group.querySelectorAll('input');
@@ -1209,11 +999,6 @@ function personalizeInit() {
             // Adiciona listener para aplicar regras de visibilidade
             input.addEventListener('change', function() {
                 applyStepVisibility();
-            });
-            
-            // Adiciona listener para atualizar o link do WhatsApp
-            input.addEventListener('change', function() {
-                updateWhatsAppLink();
             });
             
             // Adiciona comportamento de avançar automaticamente para radios
